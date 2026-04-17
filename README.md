@@ -1,4 +1,3 @@
-# contact-merge-tool
 # RR Contact Merge Tool  
 ## 优先联系人合并工具
 
