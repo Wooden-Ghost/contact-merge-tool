@@ -1,0 +1,1683 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>优先联系人合并工具 v4.4.5（RR优先 + SN也保留 + B邮箱成对剔除）</title>
+
+  <style>
+    :root{
+      --bg1:#08111f;
+      --bg2:#0b1a2a;
+      --text:#e5e7eb;
+      --muted:#93a4ba;
+      --line:rgba(255,255,255,.10);
+      --shadow: 0 12px 34px rgba(0,0,0,.24);
+      --radius: 10px;
+      --radius-sm: 8px;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ min-height:100%; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 560px at 15% 8%, rgba(59,130,246,.18) 0%, rgba(59,130,246,0) 58%),
+        radial-gradient(760px 460px at 88% 24%, rgba(34,197,94,.10) 0%, rgba(34,197,94,0) 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      padding: 18px 14px 26px;
+    }
+    .wrap{ max-width: 980px; margin: 0 auto; }
+    .hero{
+      display:flex; align-items:flex-start; justify-content:space-between;
+      gap: 12px; flex-wrap:wrap; margin-bottom: 12px;
+    }
+    .title{ font-size: 20px; letter-spacing: .15px; margin:0; }
+    .sub{
+      margin:6px 0 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 12px;
+      max-width: 760px;
+    }
+    .stats{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(7,12,22,.66);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+      font-size: 13px;
+    }
+    .stats span{ font-weight:700; white-space:nowrap; }
+    .stats button{ padding:5px 11px; font-size:12px; }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(10px);
+    }
+    .card-inner{ padding: 14px; }
+    .section{
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    }
+    .section + .section{ margin-top: 12px; }
+    .section-title{
+      margin:0 0 8px;
+      font-size: 13px;
+      font-weight: 750;
+      color: #f8fafc;
+    }
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 860px){ .grid{ grid-template-columns: 1fr; } }
+
+    .field label{
+      display:block; font-weight: 700; font-size: 12px;
+      margin: 0 0 7px; color: #f3f4f6;
+    }
+    .input{
+      width:100%;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.20);
+      color: var(--text);
+      outline: none;
+      transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+    .input:focus{
+      border-color: rgba(124,58,237,.56);
+      box-shadow: 0 0 0 3px rgba(124,58,237,.14);
+      background: rgba(0,0,0,.28);
+    }
+
+    .drop{
+      border: 1px dashed rgba(255,255,255,.18);
+      border-radius: var(--radius);
+      background: rgba(0,0,0,.16);
+      padding: 12px;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      min-height: 86px;
+      transition: border-color .12s ease, background .12s ease, transform .12s ease;
+      cursor: pointer;
+    }
+    .drop:hover{
+      border-color: rgba(124,58,237,.48);
+      background: rgba(124,58,237,.08);
+    }
+    .drop.dragover{
+      border-color: rgba(34,197,94,.82);
+      background: rgba(34,197,94,.10);
+      transform: translateY(-1px);
+    }
+    .drop-ico{
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      display:flex; align-items:center; justify-content:center;
+      flex: 0 0 auto;
+    }
+    .drop-txt .big{ font-weight: 700; font-size: 13px; margin: 0; }
+    .drop-txt .small{ margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.35; }
+
+    .file-pill{
+      margin-top: 8px;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color: #e5e7eb;
+      font-size: 12px;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    .file-pill .x{ color: rgba(255,255,255,.72); cursor:pointer; font-weight: 800; padding: 0 4px; }
+
+    .actions{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+      padding: 12px 14px;
+      border-top: 1px solid var(--line);
+      background: rgba(255,255,255,.018);
+    }
+    .btn{
+      padding: 10px 13px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.055);
+      color: var(--text);
+      cursor:pointer;
+      font-weight: 700;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease, opacity .12s ease;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+    }
+    .btn:hover{ transform: translateY(-1px); }
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(124,58,237,.92), rgba(37,99,235,.72));
+      border-color: rgba(124,58,237,.42);
+    }
+    .btn.primary:hover{
+      background: linear-gradient(135deg, rgba(124,58,237,.98), rgba(37,99,235,.82));
+    }
+    .btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
+    .btn.ghost{ background: rgba(255,255,255,.035); }
+    .btn.danger{
+      background: rgba(239,68,68,.14);
+      border-color: rgba(239,68,68,.32);
+      color:#fee2e2;
+    }
+    .btn.success{
+      background: rgba(34,197,94,.14);
+      border-color: rgba(34,197,94,.30);
+      color:#e8fff0;
+    }
+    .btn.subtle{ background: rgba(255,255,255,.028); border-color:rgba(255,255,255,.08); }
+    .btn.compact{ padding:5px 10px; border-radius:999px; font-size:12px; font-weight:700; }
+
+    .log{
+      margin-top: 0;
+      padding: 12px 14px 14px;
+      border-top: 1px solid var(--line);
+      background: rgba(0,0,0,.10);
+    }
+    .log-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+      flex-wrap:wrap;
+    }
+    .log-title{
+      font-size:13px;
+      font-weight:800;
+      color:#f8fafc;
+    }
+    .log-meta{
+      font-size:12px;
+      color:var(--muted);
+    }
+    pre{
+      margin:0;
+      background: rgba(0,0,0,.26);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      overflow-y:auto;
+      overflow-x:auto;
+      color: #e5e7eb;
+      height: 180px;
+      line-height:1.55;
+      font-size:12px;
+      box-sizing:border-box;
+    }
+    .hintline{ margin-top:10px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+    .download-row{
+      margin-top: 12px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:space-between;
+    }
+    .download{
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34,197,94,.30);
+      background: rgba(34,197,94,.12);
+      color: #eafff2;
+      text-decoration:none;
+      font-weight: 800;
+      max-width: 100%;
+    }
+    .download:hover{ transform: translateY(-1px); }
+
+    .record-panel,.settings-panel{
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.018));
+      backdrop-filter: blur(8px);
+    }
+    .panel-head{
+      display:flex; justify-content:space-between; align-items:flex-start; gap:18px;
+      margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .panel-head h4{ margin:0; font-size:15px; }
+    .panel-sub{ margin-top:4px; color:var(--muted); font-size:12px; line-height:1.45; }
+    .record-list{
+      max-height:280px;
+      overflow-y:auto;
+      padding-right:2px;
+    }
+
+    .record-date-banner{
+      margin-bottom:10px;
+      padding:8px 10px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius-sm);
+      background: rgba(59,130,246,.08);
+      color:#dbeafe;
+      font-size:12px;
+      font-weight:700;
+    }
+
+    .record-item{
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:12px;
+      padding:12px;
+      border:1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,.022);
+      margin-bottom:10px;
+      font-size:12px;
+    }
+    .record-item:last-child{ margin-bottom:0; }
+    .record-main{ min-width:0; }
+    .record-topline{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:6px;
+    }
+    .record-company{ font-weight:800; color:#f8fafc; }
+    .record-badge{
+      display:inline-flex; align-items:center;
+      padding:2px 8px; border-radius:999px;
+      background:rgba(59,130,246,.14); border:1px solid rgba(59,130,246,.24);
+      color:#dbeafe; font-weight:800;
+    }
+    .record-file{ color:#d1d5db; word-break:break-all; }
+    .record-meta{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      color:var(--muted);
+    }
+    .record-actions{
+      display:flex;
+      align-items:flex-start;
+      gap:8px;
+      flex:0 0 auto;
+      padding-top:2px;
+    }
+    .record-actions .del-btn{
+      background:rgba(239,68,68,.12);
+      border:1px solid rgba(239,68,68,.22);
+      color:#fecaca;
+      cursor:pointer;
+      border-radius: var(--radius-sm);
+      padding:6px 10px;
+      font-size:12px;
+      font-weight:700;
+    }
+    .record-actions .del-btn:hover{ background:rgba(239,68,68,.22); }
+    .panel-footer{
+      display:flex;
+      justify-content:flex-end;
+      margin-top:14px;
+      padding-top:10px;
+      border-top:1px solid rgba(255,255,255,.08);
+    }
+    .settings-grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+    }
+    .textarea{
+      width:100%; min-height:120px; resize:vertical;
+      padding:10px 12px;
+      border-radius: var(--radius-sm);
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.20);
+      color: var(--text);
+      outline:none;
+      font-family:inherit;
+      line-height:1.5;
+    }
+    .settings-actions{
+      display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;
+      margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,.08);
+    }
+    .setting-note{ color:var(--muted); font-size:12px; line-height:1.5; margin-top:6px; }
+    .folder-chip{
+      display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap;
+      padding:6px 10px; border-radius: var(--radius-sm); border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.03); color:#e5e7eb; font-size:12px;
+    }
+
+    @media (max-width: 640px){
+      body{ padding: 12px 10px 18px; }
+      .title{ font-size:18px; }
+      .card-inner,.actions,.log,.record-panel,.settings-panel{ padding-left:10px; padding-right:10px; }
+      .record-item{ grid-template-columns:1fr; }
+      .record-actions{ justify-content:flex-end; }
+      .download-row{ align-items:stretch; }
+    }
+</style>
+
+<!-- 依赖加载 -->
+<script>
+(function(){
+  function loadSeq(urls, checkFn){
+    return new Promise(function(resolve){
+      var i = 0;
+      var tried = [];
+      function next(){
+        try{ if(checkFn()){ return resolve({ok:true, url:"(already loaded)", tried: tried}); } }catch(e){}
+        if(i >= urls.length) return resolve({ok:false, url:null, tried: tried});
+        var url = urls[i++]; tried.push(url);
+        var s = document.createElement("script");
+        s.src = url;
+        s.async = false;
+        s.onload = function(){
+          try{
+            if(checkFn()) resolve({ok:true, url:url, tried: tried});
+            else next();
+          }catch(e){ next(); }
+        };
+        s.onerror = function(){ next(); };
+        document.head.appendChild(s);
+      }
+      next();
+    });
+  }
+
+  var xlsxUrls = [
+    "https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js",
+    "https://fastly.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js",
+    "https://unpkg.com/xlsx-js-style@1.2.0/dist/xlsx.bundle.js",
+    "https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js",
+    "https://fastly.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js",
+    "https://unpkg.com/xlsx-js-style@1.2.0/dist/xlsx.min.js"
+  ];
+
+  var papaUrls = [
+    "https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js",
+    "https://fastly.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js",
+    "https://unpkg.com/papaparse@5.4.1/papaparse.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js",
+    "https://cdn.bootcdn.net/ajax/libs/PapaParse/5.4.1/papaparse.min.js"
+  ];
+
+  window.__depInfo = { xlsx:null, papa:null, ready:false };
+
+  loadSeq(xlsxUrls, function(){ return (window.XLSX && typeof XLSX.read === "function"); })
+    .then(function(r){
+      window.__depInfo.xlsx = r;
+      return loadSeq(papaUrls, function(){ return (window.Papa && typeof Papa.parse === "function"); });
+    })
+    .then(function(r){
+      window.__depInfo.papa = r;
+      window.__depInfo.ready = !!(window.__depInfo.xlsx && window.__depInfo.xlsx.ok && window.__depInfo.papa && window.__depInfo.papa.ok);
+      window.dispatchEvent(new Event("deps-loaded"));
+    });
+})();
+</script>
+
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <h1 class="title">优先联系人合并工具 v4.4.5（RR优先 + SN也保留 + B邮箱成对剔除）</h1>
+        <p class="sub">
+          自动合并 CSV 和 XLSX 联系人，优先使用个人 LinkedIn 标准化结果判定同人；若难以判断，则以 RR（CSV）字段为准。<b>RR 优先，不等于只保留 RR。</b>CSV 里有的联系人必须保留；XLSX 里未匹配到 CSV 的联系人也必须保留。匹配成功时字段优先 RR、XLSX 负责补充；若某组邮箱的标识为 B，则该“标识列 + 对应邮箱列”会在输出前成对剔除。即使剔除后该联系人没有邮箱，只要仍有 LinkedIn 等信息，也保留该行；真正会删除整行的，仍只有“职业过滤命中”与“合并去重”。邮箱仍按来源分组：共有 → SN → RR。<br/>
+          <b>说明：</b>今日累计按 RR 原始 CSV 记录数统计；第二项显示“上一次有录入数据的日期”累计；职位命中过滤词的联系人会在处理时剔除，不影响累计统计。
+        </p>
+      </div>
+      <!-- 统计区域 -->
+      <div class="stats">
+        <span>📊 今日累计：<span id="todayCount">0</span> 条</span>
+        <span id="lastActiveWrap">🗂️ 上次记录：<span id="yesterdayCount">0</span> 条</span>
+        <button id="viewRecordsBtn" class="btn ghost compact">📋 查看记录</button>
+        <button id="openSettingsBtn" class="btn subtle compact">设置</button>
+      </div>
+    </div>
+
+    <!-- 记录管理面板（默认隐藏） -->
+    <div id="recordPanel" class="record-panel" style="display:none;">
+      <div class="panel-head">
+        <div>
+          <h4>处理记录</h4>
+          <div class="panel-sub">新记录按时间从上到下查看；再次点击“查看记录”也可以关闭面板。若今天没有记录，会自动显示上一次有录入数据的那一天。</div>
+        </div>
+        <button id="closePanelBtn" class="btn subtle compact">关闭</button>
+      </div>
+      <div id="recordList" class="record-list"></div>
+      <div class="panel-footer">
+        <button id="clearTodayBtn" class="btn danger">清空今日</button>
+      </div>
+    </div>
+
+    <div id="settingsPanel" class="settings-panel" style="display:none;">
+      <div class="panel-head">
+        <div>
+          <h4>设置</h4>
+          <div class="panel-sub">这里放不常用项目：职位过滤关键词。关键词按换行分隔，保存后立即生效。</div>
+        </div>
+        <button id="closeSettingsBtn" class="btn subtle compact">关闭</button>
+      </div>
+      <div class="settings-grid">
+        <div class="field">
+          <label>职位过滤关键词（每行一个）</label>
+          <textarea id="filterKeywords" class="textarea" placeholder="例如：
+IT Manager
+HR Executive
+HR Manager
+assistant"></textarea>
+          <div class="setting-note">匹配规则为“不区分大小写，短语命中即过滤”。例如 assistant 会过滤 Executive Assistant。</div>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button id="saveSettingsBtn" class="btn primary">保存设置</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-inner">
+        <div class="section">
+          <div class="field">
+            <label>公司名（仅用于输出文件名）</label>
+            <input id="companyName" class="input" type="text" placeholder="例如：FUSION PACKAGING" />
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">文件导入</div>
+          <div class="grid">
+          <div class="field">
+            <label>拖入 CSV（联系人表）</label>
+            <div id="dropCsv" class="drop" tabindex="0">
+              <div class="drop-ico">📄</div>
+              <div class="drop-txt">
+                <p class="big">拖入 CSV 文件，或点击选择</p>
+                <p class="small">必需列：姓名、职位</p>
+                <div id="csvPill"></div>
+              </div>
+            </div>
+            <input id="csvInput" type="file" accept=".csv,text/csv" style="display:none" />
+          </div>
+
+          <div class="field">
+            <label>拖入 XLSX（补充数据表）</label>
+            <div id="dropXlsx" class="drop" tabindex="0">
+              <div class="drop-ico">📘</div>
+              <div class="drop-txt">
+                <p class="big">拖入 XLSX 文件，或点击选择</p>
+                <p class="small">建议列：邮箱地址、邮箱地址状态、全名、LinkedIn、工作职位、公司名称、城市、国家</p>
+                <div id="xlsxPill"></div>
+              </div>
+            </div>
+            <input id="xlsxInput" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" />
+          </div>
+          </div>
+          <div class="hintline">
+            处理完成后会生成下载按钮；清除按钮保留在主操作区，方便窄窗口下继续从浏览器下载栏拖拽文件。
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="runBtn" class="btn primary">合并 CSV+XLSX</button>
+        <button id="clearBtnTop" class="btn ghost">清除</button>
+      </div>
+
+      <div class="log">
+        <div class="log-head">
+          <div>
+            <div class="log-title">处理日志</div>
+            <div class="log-meta">日志内容会说明 CSV / XLSX 原始条数、职位过滤删除条数、B 邮箱对剔除数、合并条数、CSV 独有保留数、XLSX 独有保留数和最终生成条数；记录数据会自动清理 30 天前内容。</div>
+          </div>
+        </div>
+        <pre id="log"></pre>
+        <div id="downloads"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const $ = (id)=>document.getElementById(id);
+  const logEl = $("log");
+  const dlEl = $("downloads");
+
+  let csvFile = null;
+  let xlsxFile = null;
+  let lastBlobUrl = null;
+  let currentLogLines = [];
+  let logDirectoryHandle = null;
+  const SETTINGS_KEY = "rrMergeToolSettings_v2";
+  const BLOCKED_EMAIL_MARKER = 'B';
+  const RECORD_KEY_PREFIX = "rrRecords_";
+  const RECORD_RETENTION_DAYS = 30;
+  const DEFAULT_FILTER_LINES = ["IT Manager","HR Executive","HR Manager","assistant"];
+  let titleExcludeMatchers = [];
+
+  function log(msg){
+    currentLogLines.push(msg);
+    logEl.textContent += msg + "\n";
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function clearLog(){ currentLogLines = []; logEl.textContent = ""; }
+  function clearDownloads(){
+    dlEl.innerHTML = "";
+    if(lastBlobUrl){
+      try{ URL.revokeObjectURL(lastBlobUrl); }catch(e){}
+      lastBlobUrl = null;
+    }
+  }
+
+  // --- 依赖检查 ---
+  const runBtn = $("runBtn");
+  runBtn.disabled = true;
+
+  function depsReady(){
+    return (window.XLSX && typeof XLSX.read === "function" &&
+            window.Papa && typeof Papa.parse === "function");
+  }
+
+  function waitDeps(timeoutMs=8000){
+    const start = Date.now();
+    return new Promise((resolve)=>{
+      const t = setInterval(()=>{
+        if(depsReady()){ clearInterval(t); resolve(true); }
+        else if(Date.now()-start > timeoutMs){ clearInterval(t); resolve(false); }
+      }, 120);
+    });
+  }
+
+  let _depsInitDone = false;
+  function initDeps(){
+    if(_depsInitDone) return;
+    _depsInitDone = true;
+
+    log("⏳ 正在加载依赖（XLSX / PapaParse）…");
+
+    waitDeps().then((ok)=>{
+      if(ok){
+        runBtn.disabled = false;
+        log("✅ 依赖加载成功（XLSX / PapaParse）。");
+        setTimeout(()=>{ try{ alert("✅ 依赖加载完成（XLSX / PapaParse），可以开始生成了。"); }catch(e){} }, 60);
+      }else{
+        runBtn.disabled = true;
+        log("❌ 依赖加载失败：通常是网络/防火墙/代理拦截 CDN，或无法访问外部脚本。");
+        if(window.__depInfo){
+          if(window.__depInfo.xlsx && !window.__depInfo.xlsx.ok) log("XLSX 尝试过：" + (window.__depInfo.xlsx.tried||[]).join(" | "));
+          if(window.__depInfo.papa && !window.__depInfo.papa.ok) log("PapaParse 尝试过：" + (window.__depInfo.papa.tried||[]).join(" | "));
+        }
+        setTimeout(()=>{ try{ alert("❌ 依赖加载失败（XLSX / PapaParse）。\n请检查网络/防火墙是否拦截 CDN，或更换网络后重试。"); }catch(e){} }, 80);
+      }
+    });
+  }
+
+  window.addEventListener("deps-loaded", initDeps, { once:true });
+  setTimeout(initDeps, 0);
+
+  // --- 每日统计与设置相关 ---
+  const todayCountSpan = $("todayCount");
+  const yesterdayCountSpan = $("yesterdayCount");
+  const recordPanel = $("recordPanel");
+  const settingsPanel = $("settingsPanel");
+  const recordListDiv = $("recordList");
+  const viewRecordsBtn = $("viewRecordsBtn");
+  const openSettingsBtn = $("openSettingsBtn");
+  const closePanelBtn = $("closePanelBtn");
+  const closeSettingsBtn = $("closeSettingsBtn");
+  const clearTodayBtn = $("clearTodayBtn");
+  const filterKeywordsInput = $("filterKeywords");
+  const saveSettingsBtn = $("saveSettingsBtn");
+
+  function getTodayStr() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  function dateToStr(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  function parseDateStr(dateStr) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr || '');
+    if (!m) return null;
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  }
+  function isDateWithinRetention(dateStr) {
+    const d = parseDateStr(dateStr);
+    if (!d) return false;
+    const today = parseDateStr(getTodayStr());
+    d.setHours(0,0,0,0);
+    today.setHours(0,0,0,0);
+    const diffDays = Math.floor((today - d) / 86400000);
+    return diffDays <= RECORD_RETENTION_DAYS - 1;
+  }
+  function cleanupOldRecords() {
+    const keysToDelete = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(RECORD_KEY_PREFIX)) {
+        const dateStr = key.slice(RECORD_KEY_PREFIX.length);
+        if (!isDateWithinRetention(dateStr)) keysToDelete.push(key);
+      }
+    }
+    keysToDelete.forEach(k => localStorage.removeItem(k));
+    return keysToDelete.length;
+  }
+  function getRecordDateKeys() {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(RECORD_KEY_PREFIX)) {
+        const dateStr = key.slice(RECORD_KEY_PREFIX.length);
+        if (isDateWithinRetention(dateStr)) keys.push(dateStr);
+      }
+    }
+    return keys.sort((a,b)=> b.localeCompare(a));
+  }
+  function getLastActiveDateStr(excludeToday = true) {
+    const today = getTodayStr();
+    const keys = getRecordDateKeys();
+    for (const dateStr of keys) {
+      if (excludeToday && dateStr === today) continue;
+      const recs = loadRecordsForDate(dateStr);
+      if (recs.some(r => (r.count || 0) > 0)) return dateStr;
+    }
+    return null;
+  }
+  function loadRecordsForDate(dateStr) {
+    const key = `${RECORD_KEY_PREFIX}${dateStr}`;
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  function saveTodayRecords(records) {
+    const key = `${RECORD_KEY_PREFIX}${getTodayStr()}`;
+    localStorage.setItem(key, JSON.stringify(records));
+    updateStats();
+  }
+  function getTodayRecords() {
+    return loadRecordsForDate(getTodayStr());
+  }
+  function getLastActiveTotal() {
+    const lastDate = getLastActiveDateStr(true);
+    if (!lastDate) return 0;
+    const recs = loadRecordsForDate(lastDate);
+    return recs.reduce((sum, r) => sum + (r.count || 0), 0);
+  }
+  function formatDateCn(dateStr) {
+    const d = parseDateStr(dateStr);
+    if (!d) return '上次记录';
+    return `${d.getMonth() + 1}月${d.getDate()}日`;
+  }
+  function updateLastActiveLabel() {
+    const wrap = $("lastActiveWrap");
+    const lastDate = getLastActiveDateStr(true);
+    wrap.firstChild.textContent = lastDate ? `🗂️ 上次记录（${formatDateCn(lastDate)}）：` : '🗂️ 上次记录：';
+  }
+  function getTodayTotal() {
+    const recs = getTodayRecords();
+    return recs.reduce((sum, r) => sum + (r.count || 0), 0);
+  }
+  function updateStats() {
+    todayCountSpan.textContent = getTodayTotal();
+    yesterdayCountSpan.textContent = getLastActiveTotal();
+    updateLastActiveLabel();
+    if (recordPanel.style.display !== 'none') renderRecordList();
+  }
+  function addRecord(company, filename, count) {
+    if (!count || count <= 0) return;
+    const records = getTodayRecords();
+    records.push({
+      company: company || '未命名',
+      filename: filename || '未知文件',
+      count: count,
+      timestamp: Date.now()
+    });
+    saveTodayRecords(records);
+    log(`今日累计增加 ${count} 条 RR 原始记录（文件：${filename}）`);
+  }
+  function removeRecord(index) {
+    const activeDate = getTodayRecords().length ? getTodayStr() : (getLastActiveDateStr(false) || getTodayStr());
+    const records = loadRecordsForDate(activeDate);
+    if (index >= 0 && index < records.length) {
+      records.splice(index, 1);
+      saveTodayRecords(records);
+      updateStats();
+    }
+  }
+  function clearToday() {
+    if (confirm('确定清空今日所有记录吗？累计数量将归零。')) {
+      saveTodayRecords([]);
+      updateStats();
+      log('今日记录已清空。');
+    }
+  }
+  function renderRecordList() {
+    const activeDate = getTodayRecords().length ? getTodayStr() : getLastActiveDateStr(false);
+    const records = activeDate ? loadRecordsForDate(activeDate) : [];
+    if (records.length === 0) {
+      recordListDiv.innerHTML = '<div style="color:var(--muted); text-align:center; padding:10px;">暂无记录</div>';
+      recordListDiv.scrollTop = 0;
+      return;
+    }
+    let html = `<div class="record-date-banner">当前显示：${activeDate === getTodayStr() ? '今日' : '上次记录日'}（${formatDateCn(activeDate)}）</div>`;
+    records.forEach((rec, idx) => {
+      const dt = new Date(rec.timestamp);
+      const time = `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}:${String(dt.getSeconds()).padStart(2,'0')}`;
+      html += `
+        <div class="record-item">
+          <div class="record-main">
+            <div class="record-topline">
+              <span class="record-company">${escapeHtml(rec.company)}</span>
+              <span class="record-badge">${rec.count} 条</span>
+            </div>
+            <div class="record-file">${escapeHtml(rec.filename)}</div>
+            <div class="record-meta">
+              <span>时间：${time}</span>
+              <span>日期：${activeDate}</span>
+            </div>
+          </div>
+          <div class="record-actions">
+            <button class="del-btn" data-index="${idx}">删除</button>
+          </div>
+        </div>
+      `;
+    });
+    recordListDiv.innerHTML = html;
+    recordListDiv.scrollTop = 0;
+    recordListDiv.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const index = e.target.getAttribute('data-index');
+        if (index !== null) removeRecord(parseInt(index, 10));
+      });
+    });
+  }
+  function initDailyStats() {
+
+    const todayKey = `rrRecords_${getTodayStr()}`;
+    if (!localStorage.getItem(todayKey)) localStorage.setItem(todayKey, '[]');
+    updateStats();
+  }
+
+  function buildTitleMatchers(lines){
+    return lines
+      .map(s => (s || '').trim().toLowerCase())
+      .filter(Boolean);
+  }
+  function loadSettings(){
+    try{
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      const lines = Array.isArray(parsed.filterLines) && parsed.filterLines.length ? parsed.filterLines : DEFAULT_FILTER_LINES;
+      filterKeywordsInput.value = lines.join('\n');
+      titleExcludeMatchers = buildTitleMatchers(lines);
+    }catch(e){
+      filterKeywordsInput.value = DEFAULT_FILTER_LINES.join('\n');
+      titleExcludeMatchers = buildTitleMatchers(DEFAULT_FILTER_LINES);
+    }
+  }
+  function saveSettings(){
+    const lines = filterKeywordsInput.value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ filterLines: lines }));
+    titleExcludeMatchers = buildTitleMatchers(lines);
+    log(`已保存设置：职位过滤关键词 ${lines.length} 个。`);
+  }
+
+  function toggleRecordPanel(force){
+    const show = typeof force === 'boolean' ? force : recordPanel.style.display === 'none';
+    recordPanel.style.display = show ? 'block' : 'none';
+    if (show) {
+      renderRecordList();
+      settingsPanel.style.display = 'none';
+    }
+  }
+  function toggleSettingsPanel(force){
+    const show = typeof force === 'boolean' ? force : settingsPanel.style.display === 'none';
+    settingsPanel.style.display = show ? 'block' : 'none';
+    if (show) recordPanel.style.display = 'none';
+  }
+
+
+  initDailyStats();
+  loadSettings();
+
+  viewRecordsBtn.addEventListener('click', () => toggleRecordPanel());
+  openSettingsBtn.addEventListener('click', () => toggleSettingsPanel());
+  closePanelBtn.addEventListener('click', () => toggleRecordPanel(false));
+  closeSettingsBtn.addEventListener('click', () => toggleSettingsPanel(false));
+  clearTodayBtn.addEventListener('click', clearToday);
+  saveSettingsBtn.addEventListener('click', saveSettings);
+
+  // --- 原有功能 ---
+  function resetAll(){
+    csvFile = null;
+    xlsxFile = null;
+    $("csvInput").value = "";
+    $("xlsxInput").value = "";
+    $("companyName").value = "";
+    $("csvPill").innerHTML = "";
+    $("xlsxPill").innerHTML = "";
+    clearDownloads();
+    clearLog();
+    log("已清除文件和公司名输入框。");
+  }
+
+  function showPill(el, file, onClear){
+    if(!file){ el.innerHTML = ""; return; }
+    const safeName = file.name.replaceAll("<","&lt;").replaceAll(">","&gt;");
+    el.innerHTML = `<span class="file-pill">✅ ${safeName} <span class="x" title="移除">×</span></span>`;
+    el.querySelector(".x").addEventListener("click", (e)=>{
+      e.stopPropagation();
+      onClear();
+    });
+  }
+
+  function setupDrop(dropEl, inputEl, setFile, pillEl){
+    const onClear = () => {
+      setFile(null);
+      showPill(pillEl, null, ()=>{});
+      inputEl.value = "";
+    };
+
+    const openPicker = ()=> inputEl.click();
+    dropEl.addEventListener("click", openPicker);
+    dropEl.addEventListener("keydown", (e)=>{
+      if(e.key==="Enter" || e.key===" "){ e.preventDefault(); openPicker(); }
+    });
+
+    ["dragenter","dragover"].forEach(evt=>{
+      dropEl.addEventListener(evt, (e)=>{
+        e.preventDefault();
+        dropEl.classList.add("dragover");
+      });
+    });
+    ["dragleave","drop"].forEach(evt=>{
+      dropEl.addEventListener(evt, (e)=>{
+        e.preventDefault();
+        dropEl.classList.remove("dragover");
+      });
+    });
+
+    dropEl.addEventListener("drop", (e)=>{
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if(!f) return;
+      setFile(f);
+      showPill(pillEl, f, onClear);
+    });
+
+    inputEl.addEventListener("change", ()=>{
+      const f = inputEl.files && inputEl.files[0];
+      if(!f) return;
+      setFile(f);
+      showPill(pillEl, f, onClear);
+    });
+  }
+
+  // --- 工具函数 ---
+  function normEmail(v){
+    if(v === undefined || v === null) return null;
+    const s = String(v).trim();
+    if(!s || s.toLowerCase()==="nan") return null;
+    return s.toLowerCase();
+  }
+  function normText(v){
+    if(v === undefined || v === null) return "";
+    return String(v).toLowerCase().replace(/\s+/g," ").trim();
+  }
+  function normNameKey(v){
+    return normText(v)
+      .replace(/[^a-z0-9\u00C0-\u024F\u4E00-\u9FFF ]/g, " ")
+      .replace(/\s+/g," ")
+      .trim();
+  }
+  function normCompanyKey(v){
+    return normText(v)
+      .replace(/&/g, " and ")
+      .replace(/[^a-z0-9\u00C0-\u024F\u4E00-\u9FFF ]/g, " ")
+      .replace(/\b(the|inc|incorporated|corp|corporation|co|company|ltd|limited|llc|plc|gmbh|sarl|sa|spa|pte)\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  function normalizeLinkedin(v){
+    if (v === undefined || v === null) return "";
+    let s = String(v).trim();
+    if (!s || s.toLowerCase() === "nan") return "";
+    s = s.toLowerCase();
+    s = s.replace(/^https?:\/\//, "");
+    s = s.replace(/^www\./, "");
+    s = s.replace(/^m\./, "");
+    const cutIndex = s.search(/[?#]/);
+    if (cutIndex >= 0) s = s.slice(0, cutIndex);
+    s = s.replace(/\/+$/g, "");
+    return s;
+  }
+  function getContactLinkedinKey(contact){
+    return normalizeLinkedin(contact && contact.linkedin);
+  }
+  function getFallbackMatchKey(contact){
+    const companyKey = normCompanyKey(contact && contact.company);
+    const nameKey = normNameKey(contact && contact.name);
+    if (!companyKey || !nameKey) return "";
+    return companyKey + "||" + nameKey;
+  }
+  function hasCommonEmail(contactA, contactB){
+    const emailSet = new Set((contactA && contactA.emails || []).map(item => item.email));
+    return (contactB && contactB.emails || []).some(item => emailSet.has(item.email));
+  }
+  function getXlsxGroupKey(row, index){
+    const linkedinKey = normalizeLinkedin(row["LinkedIn"]);
+    if (linkedinKey) return "li||" + linkedinKey;
+    const companyKey = normCompanyKey(row["公司名称"]);
+    const nameKey = normNameKey(row["全名"]);
+    if (companyKey && nameKey) return "cn||" + companyKey + "||" + nameKey;
+    if (nameKey) return "n||" + nameKey;
+    return "row||" + index;
+  }
+  function getMatchReason(csvContact, xlsxContact){
+    const csvLinkedin = getContactLinkedinKey(csvContact);
+    const xlsxLinkedin = getContactLinkedinKey(xlsxContact);
+    if (csvLinkedin && xlsxLinkedin) {
+      return csvLinkedin === xlsxLinkedin ? "linkedin" : "";
+    }
+    if (hasCommonEmail(csvContact, xlsxContact)) return "email";
+    if (!csvLinkedin && !xlsxLinkedin) {
+      const csvFallbackKey = getFallbackMatchKey(csvContact);
+      const xlsxFallbackKey = getFallbackMatchKey(xlsxContact);
+      if (csvFallbackKey && csvFallbackKey === xlsxFallbackKey) return "company_name";
+    }
+    return "";
+  }
+
+  function getRawCsvRecordCount(rows){
+    let count = 0;
+    for (const r of (rows || [])) {
+      const values = Object.values(r || {});
+      const hasAny = values.some(v => String(v ?? '').trim() !== '');
+      if (hasAny) count++;
+    }
+    return count;
+  }
+
+  // 职位过滤：命中以下关键词/短语则直接删除整行
+  function shouldExcludeTitle(title){
+    const s = (title || '').toString().trim();
+    if(!s) return false;
+    return titleExcludeMatchers.some(item => s.toLowerCase().includes(item));
+  }
+  function hasMeaningfulContactPayload(contact){
+    if(!contact) return false;
+    const fields = [contact.name, contact.title, contact.linkedin, contact.company, contact.address];
+    if (fields.some(v => String(v || '').trim() !== '')) return true;
+    return Array.isArray(contact.emails) && contact.emails.some(e => normEmail(e && e.email));
+  }
+  function statusToMarker(status){
+    const s = normText(status);
+    if(s==="valid") return "A";
+    if(s==="unknown") return "B";
+    return "";
+  }
+  function normalizeMarker(marker){
+    return String(marker || '').trim().toUpperCase();
+  }
+  function isBlockedMarker(marker){
+    return normalizeMarker(marker) === BLOCKED_EMAIL_MARKER;
+  }
+  function summarizeEmailSources(emails){
+    const stats = { both: 0, xlsx: 0, csv: 0 };
+    (emails || []).forEach(e => {
+      if (e.source === 'both') stats.both++;
+      else if (e.source === 'xlsx') stats.xlsx++;
+      else if (e.source === 'csv') stats.csv++;
+    });
+    return stats;
+  }
+  function filterBlockedEmailsFromContacts(contacts){
+    let removedEmailCount = 0;
+    const filteredContacts = [];
+    for (const contact of (contacts || [])) {
+      const deduped = [];
+      const seen = new Set();
+      for (const emailItem of (contact.emails || [])) {
+        const email = normEmail(emailItem && emailItem.email);
+        if (!email || seen.has(email)) continue;
+        seen.add(email);
+        const marker = normalizeMarker(emailItem && emailItem.marker);
+        if (isBlockedMarker(marker)) {
+          removedEmailCount++;
+          continue;
+        }
+        deduped.push({
+          email,
+          marker,
+          source: emailItem && emailItem.source ? emailItem.source : 'csv'
+        });
+      }
+      filteredContacts.push({ ...contact, emails: deduped });
+    }
+    return { contacts: filteredContacts, removedEmailCount };
+  }
+
+  // 解析 CSV 联系人，提取邮箱对（邮箱+标识）
+  function parseCsvContact(row, headers) {
+    const emails = [];
+    // 找出所有邮箱列和标识列
+    const emailCols = [];
+    const markerCols = [];
+    headers.forEach((h, idx) => {
+      if (/^邮箱\d+$/.test(h)) {
+        const num = parseInt(h.replace('邮箱', ''), 10);
+        emailCols.push({ name: h, num });
+      } else if (/^邮箱标识\d+$/.test(h)) {
+        const num = parseInt(h.replace('邮箱标识', ''), 10);
+        markerCols.push({ name: h, num });
+      }
+    });
+    // 按 num 排序
+    emailCols.sort((a,b) => a.num - b.num);
+    markerCols.sort((a,b) => a.num - b.num);
+    // 构建邮箱列表
+    for (let i = 0; i < emailCols.length; i++) {
+      const email = normEmail(row[emailCols[i].name]);
+      if (email) {
+        const marker = normalizeMarker(row[markerCols[i]?.name] || '');
+        emails.push({ email, marker, source: 'csv' }); // 初始标记为csv，后续可能合并为both
+      }
+    }
+    return emails;
+  }
+
+  // 解析 XLSX 联系人（单个）
+  function parseXlsxContact(row) {
+    const emails = [];
+    const email = normEmail(row['邮箱地址']);
+    if (email) {
+      emails.push({ email, marker: statusToMarker(row['邮箱地址状态']), source: 'xlsx' });
+    }
+    return emails;
+  }
+
+  // 合并两个联系人：判断使用标准化 LinkedIn，最终字段默认 RR（CSV）优先，XLSX 仅作补充
+  function mergeContacts(csvContact, xlsxContact) {
+    const combinedEmails = [];
+    csvContact.emails.forEach(e => combinedEmails.push({
+      email: e.email,
+      marker: normalizeMarker(e.marker),
+      source: 'csv'
+    }));
+    xlsxContact.emails.forEach(xe => {
+      const existing = combinedEmails.find(ce => ce.email === xe.email);
+      if (existing) {
+        existing.source = 'both';
+      } else {
+        combinedEmails.push({
+          email: xe.email,
+          marker: normalizeMarker(xe.marker),
+          source: 'xlsx'
+        });
+      }
+    });
+    const merged = {
+      name: csvContact.name || xlsxContact.name,
+      title: csvContact.title || xlsxContact.title,
+      linkedin: csvContact.linkedin || xlsxContact.linkedin,
+      company: csvContact.company || xlsxContact.company,
+      address: csvContact.address || xlsxContact.address,
+      emails: combinedEmails
+    };
+    return merged;
+  }
+
+  // 构建最终行数据（按分组列填充），顺序为：共有、SN、RR；每对列先标识后邮箱
+  function buildRows(contacts, maxBoth, maxXlsx, maxCsv) {
+    const rows = [];
+    const totalPairs = maxBoth + maxXlsx + maxCsv;
+    // 对于每个联系人，按来源填充
+    for (let c of contacts) {
+      const row = {
+        姓名: c.name,
+        职位: c.title,
+        LinkedIn: c.linkedin || '',
+        公司: c.company || '',
+        地址: c.address || ''
+      };
+      // 按来源分类邮箱
+      const bothEmails = c.emails.filter(e => e.source === 'both');
+      const xlsxEmails = c.emails.filter(e => e.source === 'xlsx');
+      const csvEmails = c.emails.filter(e => e.source === 'csv');
+      
+      // 填充 共有 组（先标识后邮箱）
+      for (let i = 0; i < maxBoth; i++) {
+        const colIdx = i + 1;
+        if (i < bothEmails.length) {
+          row[`标识${colIdx}`] = bothEmails[i].marker;
+          row[`邮箱${colIdx}`] = bothEmails[i].email;
+        } else {
+          row[`标识${colIdx}`] = '';
+          row[`邮箱${colIdx}`] = '';
+        }
+      }
+      // 填充 SN 组
+      for (let i = 0; i < maxXlsx; i++) {
+        const colIdx = maxBoth + i + 1;
+        if (i < xlsxEmails.length) {
+          row[`标识${colIdx}`] = xlsxEmails[i].marker;
+          row[`邮箱${colIdx}`] = xlsxEmails[i].email;
+        } else {
+          row[`标识${colIdx}`] = '';
+          row[`邮箱${colIdx}`] = '';
+        }
+      }
+      // 填充 RR 组
+      for (let i = 0; i < maxCsv; i++) {
+        const colIdx = maxBoth + maxXlsx + i + 1;
+        if (i < csvEmails.length) {
+          row[`标识${colIdx}`] = csvEmails[i].marker;
+          row[`邮箱${colIdx}`] = csvEmails[i].email;
+        } else {
+          row[`标识${colIdx}`] = '';
+          row[`邮箱${colIdx}`] = '';
+        }
+      }
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  // 生成带分组行的工作表，并应用组间分隔线
+  function buildSheet(rows, maxBoth, maxXlsx, maxCsv) {
+    const totalPairs = maxBoth + maxXlsx + maxCsv;
+    // 列名：非邮箱列 + 邮箱列对（先标识后邮箱）
+    const fixedHeaders = ['姓名', '职位', 'LinkedIn', '公司', '地址'];
+    const emailHeaders = [];
+    for (let i = 1; i <= totalPairs; i++) {
+      emailHeaders.push(`标识${i}`, `邮箱${i}`);
+    }
+    const allHeaders = fixedHeaders.concat(emailHeaders);
+
+    // 构建 AOA
+    const aoa = [];
+    // 第一行：分组行，前五列放入列名（用于纵向合并）
+    const groupRow = [];
+    groupRow.push('姓名', '职位', 'LinkedIn', '公司', '地址');
+    // 添加分组单元格，顺序：共有、SN、RR
+    if (maxBoth > 0) {
+      groupRow.push('共有');
+      for (let i = 1; i < maxBoth * 2; i++) groupRow.push('');
+    }
+    if (maxXlsx > 0) {
+      groupRow.push('SN');
+      for (let i = 1; i < maxXlsx * 2; i++) groupRow.push('');
+    }
+    if (maxCsv > 0) {
+      groupRow.push('RR');
+      for (let i = 1; i < maxCsv * 2; i++) groupRow.push('');
+    }
+    aoa.push(groupRow);
+
+    // 第二行：列名行，前五列为空（将与第一行纵向合并），邮箱列部分正常显示
+    const headerRow = [];
+    for (let i = 0; i < fixedHeaders.length; i++) headerRow.push('');
+    headerRow.push(...emailHeaders);
+    aoa.push(headerRow);
+
+    // 数据行
+    for (let r of rows) {
+      const row = [];
+      fixedHeaders.forEach(h => row.push(r[h] ?? ''));
+      for (let i = 1; i <= totalPairs; i++) {
+        row.push(r[`标识${i}`] ?? '', r[`邮箱${i}`] ?? '');
+      }
+      aoa.push(row);
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+    // 设置合并单元格
+    const merges = [];
+    // 前五列纵向合并：A1:A2, B1:B2, C1:C2, D1:D2, E1:E2
+    for (let c = 0; c < fixedHeaders.length; c++) {
+      merges.push({ s: { r:0, c }, e: { r:1, c } });
+    }
+    // 分组行横向合并
+    let startCol = fixedHeaders.length;
+    if (maxBoth > 0) {
+      merges.push({ s: { r:0, c:startCol }, e: { r:0, c:startCol + maxBoth*2 - 1 } });
+      startCol += maxBoth * 2;
+    }
+    if (maxXlsx > 0) {
+      merges.push({ s: { r:0, c:startCol }, e: { r:0, c:startCol + maxXlsx*2 - 1 } });
+      startCol += maxXlsx * 2;
+    }
+    if (maxCsv > 0) {
+      merges.push({ s: { r:0, c:startCol }, e: { r:0, c:startCol + maxCsv*2 - 1 } });
+    }
+    ws['!merges'] = merges;
+
+    // 应用样式
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    const totalRows = range.e.r + 1;
+    const totalCols = range.e.c + 1;
+
+    // 定义细边框（thin）
+    const thin = { style: 'thin', color: { rgb: '000000' } };
+
+    // 计算各组的起始和结束列索引（相对于整个表格）
+    const groupStarts = [];
+    const groupEnds = [];
+    let colIdx = fixedHeaders.length;
+    if (maxBoth > 0) {
+      groupStarts.push(colIdx);
+      groupEnds.push(colIdx + maxBoth*2 - 1);
+      colIdx += maxBoth * 2;
+    }
+    if (maxXlsx > 0) {
+      groupStarts.push(colIdx);
+      groupEnds.push(colIdx + maxXlsx*2 - 1);
+      colIdx += maxXlsx * 2;
+    }
+    if (maxCsv > 0) {
+      groupStarts.push(colIdx);
+      groupEnds.push(colIdx + maxCsv*2 - 1);
+    }
+
+    // 只添加组间分隔线（每组第一列的左边框和最后一列的右边框）
+    for (let g = 0; g < groupStarts.length; g++) {
+      const leftCol = groupStarts[g];
+      const rightCol = groupEnds[g];
+      // 左边框
+      for (let r = 0; r < totalRows; r++) {
+        const addrLeft = XLSX.utils.encode_cell({ r, c: leftCol });
+        if (!ws[addrLeft]) ws[addrLeft] = { t: 's', v: '' };
+        if (!ws[addrLeft].s) ws[addrLeft].s = {};
+        if (!ws[addrLeft].s.border) ws[addrLeft].s.border = {};
+        ws[addrLeft].s.border.left = thin;
+      }
+      // 右边框
+      for (let r = 0; r < totalRows; r++) {
+        const addrRight = XLSX.utils.encode_cell({ r, c: rightCol });
+        if (!ws[addrRight]) ws[addrRight] = { t: 's', v: '' };
+        if (!ws[addrRight].s) ws[addrRight].s = {};
+        if (!ws[addrRight].s.border) ws[addrRight].s.border = {};
+        ws[addrRight].s.border.right = thin;
+      }
+    }
+
+    // 分组行（第一行）样式：前五列应用表头样式（与第二行一致），分组单元格背景色和字体
+    const groupColors = { '共有': 'C6E0B4', 'SN': 'BDD7EE', 'RR': 'D9D9D9' };
+    for (let c = 0; c < totalCols; c++) {
+      const addr = XLSX.utils.encode_cell({ r:0, c });
+      if (!ws[addr]) continue;
+      if (c < fixedHeaders.length) {
+        // 前五列：表头样式
+        ws[addr].s = {
+          font: { bold: true, color: { rgb: 'FFFFFF' } },
+          fill: { patternType: 'solid', fgColor: { rgb: '4F46E5' } },
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
+        };
+      } else {
+        // 分组单元格
+        const groupName = aoa[0][c];
+        if (groupName && groupColors[groupName]) {
+          ws[addr].s = {
+            font: { bold: true, sz: 14, color: { rgb: '000000' } },
+            fill: { patternType: 'solid', fgColor: { rgb: groupColors[groupName] } },
+            alignment: { horizontal: 'center', vertical: 'center' }
+          };
+        }
+      }
+    }
+
+    // 表头（第二行）样式：前五列已被纵向合并，可以不设置，但为了保险，我们设置一下（但会被合并覆盖）
+    for (let c = 0; c < totalCols; c++) {
+      const addr = XLSX.utils.encode_cell({ r:1, c });
+      if (!ws[addr]) ws[addr] = { t:'s', v: aoa[1][c] };
+      // 邮箱列部分应用表头样式
+      if (c >= fixedHeaders.length) {
+        ws[addr].s = {
+          font: { bold: true, color: { rgb: 'FFFFFF' } },
+          fill: { patternType: 'solid', fgColor: { rgb: '4F46E5' } },
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
+        };
+      } else {
+        // 前五列已经与第一行合并，这里可以留空，但为了完整，也设置一下样式（但合并后显示第一行的样式）
+        ws[addr].s = {
+          font: { bold: true, color: { rgb: 'FFFFFF' } },
+          fill: { patternType: 'solid', fgColor: { rgb: '4F46E5' } },
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
+        };
+      }
+    }
+
+    // 标识列居中
+    const markerColIndices = [];
+    allHeaders.forEach((h, idx) => {
+      if (/^标识\d+$/.test(h)) markerColIndices.push(idx);
+    });
+    for (let c of markerColIndices) {
+      for (let r = 2; r < totalRows; r++) {
+        const addr = XLSX.utils.encode_cell({ r, c });
+        if (ws[addr] && ws[addr].v !== undefined && ws[addr].v !== null && String(ws[addr].v).trim() !== '') {
+          if (!ws[addr].s) ws[addr].s = {};
+          ws[addr].s.alignment = { horizontal: 'center', vertical: 'center' };
+        }
+      }
+    }
+
+    return ws;
+  }
+
+  // 合并 CSV+XLSX
+  $("runBtn").addEventListener("click", async ()=>{
+    if(!depsReady()){
+      clearLog();
+      log("❌ 依赖未加载。请检查网络。");
+      return;
+    }
+    const company = $("companyName").value.trim();
+    if(!company){ clearLog(); log("❌ 请先输入公司名"); return; }
+    if(!csvFile){ clearLog(); log("❌ 请先拖入/选择 CSV"); return; }
+
+    $("runBtn").disabled = true;
+    try{
+      clearLog(); clearDownloads();
+      const csvOnlyMode = !xlsxFile;
+      log(csvOnlyMode ? "开始处理 CSV ..." : "开始合并 CSV + XLSX ...");
+
+      // 读取 CSV
+      const csvText = await readAsText(csvFile);
+      const csvParsed = Papa.parse(csvText, { header:true, skipEmptyLines:true });
+      const csvHeaders = csvParsed.meta.fields || [];
+      const csvRows = csvParsed.data || [];
+      const rawCsvCount = getRawCsvRecordCount(csvRows);
+      log(`CSV 原始记录：${rawCsvCount} 条`);
+      if(!csvHeaders.includes("姓名") || !csvHeaders.includes("职位")){
+        throw new Error("CSV 缺少必要列：必须包含「姓名」「职位」。");
+      }
+
+      // 构建 CSV 联系人列表（先按职位过滤）
+      const csvContacts = [];
+      let excludedCsv = 0;
+      for (let r of csvRows) {
+        const name = r['姓名'] || '';
+        const title = r['职位'] || '';
+        const linkedin = r['LinkedIn'] || '';
+        const companyVal = r['公司'] || '';
+        const address = r['地址'] || '';
+        const emails = parseCsvContact(r, csvHeaders);
+        const csvContact = { name, title, linkedin, company: companyVal, address, emails };
+        if (!hasMeaningfulContactPayload(csvContact)) continue;
+        if (shouldExcludeTitle(title)) {
+          excludedCsv++;
+          continue;
+        }
+        csvContacts.push(csvContact);
+      }
+      log(`CSV 按职位过滤删除：${excludedCsv} 条`);
+      log(`CSV 过滤后保留：${csvContacts.length} 条`);
+
+      if (csvOnlyMode) {
+        const csvOnlyFiltered = filterBlockedEmailsFromContacts(csvContacts);
+        const finalContacts = csvOnlyFiltered.contacts;
+
+        let maxCsv = 0;
+        for (let c of finalContacts) {
+          const csvCount = c.emails.length;
+          if (csvCount > maxCsv) maxCsv = csvCount;
+        }
+
+        log(`B 邮箱对剔除：${csvOnlyFiltered.removedEmailCount} 组（标识列+邮箱列）`);
+        log(`最终生成：${finalContacts.length} 条`);
+        log(`邮箱分组列数：共有=0，SN=0，RR=${maxCsv}`);
+
+        const outRows = buildRows(finalContacts, 0, 0, maxCsv);
+        const ws = buildSheet(outRows, 0, 0, maxCsv);
+        const outWb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(outWb, ws, "优先联系人");
+        const xlsxArray = XLSX.write(outWb, { bookType:"xlsx", type:"array" });
+        const blob = new Blob([xlsxArray], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const outName = `${company}优先联系人.xlsx`;
+        renderDownloadAndClear(blob, outName);
+
+        addRecord(company, csvFile.name, rawCsvCount);
+        log("已生成下载文件。");
+        return;
+      }
+
+      // 读取 XLSX
+      const ab = await readAsArrayBuffer(xlsxFile);
+      const wb = XLSX.read(ab, { type:"array" });
+      const sheetName = wb.SheetNames[0];
+      const ws0 = wb.Sheets[sheetName];
+      const xlsxRows = XLSX.utils.sheet_to_json(ws0, { defval:"" });
+      log(`XLSX 原始记录：${xlsxRows.length} 条`);
+
+      // 构建 XLSX 联系人列表：优先按标准化 LinkedIn 分组；无 LinkedIn 时退回 公司+姓名
+      const xlsxGroups = new Map();
+      let excludedXlsx = 0;
+      xlsxRows.forEach((r, index) => {
+        const name = r["全名"] || "";
+        const title = r["工作职位"] || "";
+        const linkedin = r["LinkedIn"] || "";
+        const companyVal = r["公司名称"] || "";
+        const city = r["城市"] || "";
+        const country = r["国家"] || "";
+        const address = makeAddress(city, country);
+        const emails = parseXlsxContact(r);
+        const xlsxContact = { name, title, linkedin, company: companyVal, address, emails };
+        if (!hasMeaningfulContactPayload(xlsxContact)) return;
+        if (shouldExcludeTitle(title)) {
+          excludedXlsx++;
+          return;
+        }
+        const key = getXlsxGroupKey(r, index);
+        if (!xlsxGroups.has(key)) xlsxGroups.set(key, []);
+        xlsxGroups.get(key).push(r);
+      });
+      log(`XLSX 按职位过滤删除：${excludedXlsx} 条`);
+
+      // 将 XLSX 分组转换为联系人对象（后续未匹配到 CSV 的也会保留）
+      const xlsxContacts = [];
+      for (let [key, list] of xlsxGroups.entries()) {
+        const rep = list[0];
+        const name = rep["全名"] || "";
+        const title = rep["工作职位"] || "";
+        const linkedin = rep["LinkedIn"] || "";
+        const companyVal = rep["公司名称"] || "";
+        const city = rep["城市"] || "";
+        const country = rep["国家"] || "";
+        const address = makeAddress(city, country);
+        const emails = [];
+        for (let r of list) {
+          const e = normEmail(r["邮箱地址"]);
+          if (e && !emails.some(em => em.email === e)) {
+            emails.push({ email: e, marker: statusToMarker(r["邮箱地址状态"]), source: 'xlsx' });
+          }
+        }
+        xlsxContacts.push({ name, title, linkedin, company: companyVal, address, emails });
+      }
+
+      log(`XLSX 过滤后保留：${xlsxContacts.length} 条（按 LinkedIn / 公司+姓名 去重后）`);
+
+      // 合并联系人：判断优先看标准化 LinkedIn；匹配成功时字段优先 RR（CSV），未匹配的 XLSX 联系人也保留
+      const mergedContacts = [];
+      const usedXlsx = new Set();
+      let mergedPairCount = 0;
+      let mergedByLinkedin = 0;
+      let mergedByEmail = 0;
+      let mergedByCompanyName = 0;
+
+      // 先处理 CSV 联系人
+      for (let csvc of csvContacts) {
+        let matchedIndex = -1;
+        let matchedReason = "";
+        for (let i = 0; i < xlsxContacts.length; i++) {
+          if (usedXlsx.has(i)) continue;
+          const xc = xlsxContacts[i];
+          const reason = getMatchReason(csvc, xc);
+          if (reason) {
+            matchedIndex = i;
+            matchedReason = reason;
+            break;
+          }
+        }
+
+        if (matchedIndex >= 0) {
+          const merged = mergeContacts(csvc, xlsxContacts[matchedIndex]);
+          mergedContacts.push(merged);
+          usedXlsx.add(matchedIndex);
+          mergedPairCount++;
+          if (matchedReason === 'linkedin') mergedByLinkedin++;
+          else if (matchedReason === 'email') mergedByEmail++;
+          else if (matchedReason === 'company_name') mergedByCompanyName++;
+        } else {
+          mergedContacts.push(csvc);
+        }
+      }
+
+      const unmatchedXlsxContacts = [];
+      for (let i = 0; i < xlsxContacts.length; i++) {
+        if (!usedXlsx.has(i)) {
+          unmatchedXlsxContacts.push(xlsxContacts[i]);
+          mergedContacts.push(xlsxContacts[i]);
+        }
+      }
+
+      const unmatchedXlsxCount = unmatchedXlsxContacts.length;
+      const csvOnlyKeptCount = csvContacts.length - mergedPairCount;
+      const mergedFiltered = filterBlockedEmailsFromContacts(mergedContacts);
+      const finalContacts = mergedFiltered.contacts;
+
+      // 统计各组最大列数（顺序：共有、SN、RR）
+      let maxBoth = 0, maxXlsx = 0, maxCsv = 0;
+      for (let c of finalContacts) {
+        const stats = summarizeEmailSources(c.emails);
+        if (stats.both > maxBoth) maxBoth = stats.both;
+        if (stats.xlsx > maxXlsx) maxXlsx = stats.xlsx;
+        if (stats.csv > maxCsv) maxCsv = stats.csv;
+      }
+
+      log(`合并成功：${mergedPairCount} 条`);
+      log(`CSV 独有直接保留：${csvOnlyKeptCount} 条`);
+      log(`匹配方式：LinkedIn=${mergedByLinkedin}，邮箱=${mergedByEmail}，公司+姓名=${mergedByCompanyName}`);
+      log(`XLSX 独有保留：${unmatchedXlsxCount} 条`);
+      log(`B 邮箱对剔除：${mergedFiltered.removedEmailCount} 组（标识列+邮箱列）`);
+      log(`最终生成：${finalContacts.length} 条`);
+      log(`邮箱分组列数：共有=${maxBoth}，SN=${maxXlsx}，RR=${maxCsv}`);
+
+      // 构建输出行
+      const outRows = buildRows(finalContacts, maxBoth, maxXlsx, maxCsv);
+      const ws = buildSheet(outRows, maxBoth, maxXlsx, maxCsv);
+      const outWb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(outWb, ws, "优先联系人");
+      const xlsxArray = XLSX.write(outWb, { bookType:"xlsx", type:"array" });
+      const blob = new Blob([xlsxArray], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const outName = `${company}优先联系人.xlsx`;
+      renderDownloadAndClear(blob, outName);
+
+      // 累加统计
+      addRecord(company, csvFile.name, rawCsvCount);
+      log("已生成下载文件。");
+    } catch(e){
+      log("❌ 处理失败：" + (e.message || e));
+    } finally{
+      $("runBtn").disabled = !depsReady();
+    }
+  });
+
+  async function readAsText(file){
+    return await new Promise((resolve,reject)=>{
+      const fr = new FileReader();
+      fr.onload = ()=> resolve(fr.result);
+      fr.onerror = reject;
+      fr.readAsText(file, "utf-8");
+    });
+  }
+  async function readAsArrayBuffer(file){
+    return await new Promise((resolve,reject)=>{
+      const fr = new FileReader();
+      fr.onload = ()=> resolve(fr.result);
+      fr.onerror = reject;
+      fr.readAsArrayBuffer(file);
+    });
+  }
+
+  function renderDownloadAndClear(blob, filename){
+    clearDownloads();
+    const url = URL.createObjectURL(blob);
+    lastBlobUrl = url;
+
+    const row = document.createElement("div");
+    row.className = "download-row";
+
+    const a = document.createElement("a");
+    a.className = "download";
+    a.href = url;
+    a.download = filename;
+    a.textContent = "⬇️ 下载 " + filename;
+
+    const clearBtn = document.createElement("button");
+    clearBtn.className = "btn danger";
+    clearBtn.textContent = "清除（重置全部）";
+    clearBtn.addEventListener("click", resetAll);
+
+    row.appendChild(a);
+    row.appendChild(clearBtn);
+    dlEl.appendChild(row);
+  }
+
+  function makeAddress(city, country){
+    if(!city && !country) return "";
+    const c = (city||"").toString().trim();
+    const k = (country||"").toString().trim();
+    if(c && k) return `${c}, ${k}`;
+    return c || k;
+  }
+
+  // 绑定拖拽区域
+  setupDrop($("dropCsv"), $("csvInput"), (f)=>{ csvFile=f; }, $("csvPill"));
+  setupDrop($("dropXlsx"), $("xlsxInput"), (f)=>{ xlsxFile=f; }, $("xlsxPill"));
+
+  $("clearBtnTop").addEventListener("click", resetAll);
+
+  log("把 CSV 和 XLSX 直接拖进来即可。");
+  log("当前合并策略：优先用标准化 LinkedIn 判重；无 LinkedIn 时，再用公司+姓名兜底；XLSX 仅补充已存在的 CSV 联系人。");
+  log("CSV 只要有联系人数据就必须保留；SN/XLSX 仅作补充，不能决定录不录。");
+  log("标识为 B 的邮箱会在导出前按“标识列 + 对应邮箱列”成对剔除；联系人本身保留，不整行删除。");
+  log("即使某联系人剔除 B 邮箱后没有邮箱，只要还有 LinkedIn 等联系方式/信息，也照样保留该行；真正删除整行的只有职业过滤命中和合并去重。");
+  log("页面会记录 RR 原始 CSV 条数，并在日志中列出原始条数、过滤删除条数、B 邮箱对剔除数、合并条数、CSV 独有保留数、XLSX 独有保留数和最终生成条数。记录数据会自动保留最近 30 天。")
+})();
+</script>
+
+</body>
+</html>
