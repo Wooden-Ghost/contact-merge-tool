@@ -1,11 +1,9 @@
 # RR Contact Merge Tool  
-## 优先联系人合并工具
-
 一个用于**联系人数据清洗与合并**的浏览器端小工具。  
+---
 适用于将 **RR 导出的 CSV 联系人表** 与 **SN/补充来源的 XLSX 数据表** 自动合并，输出结构化、可直接交付的联系人 Excel 文件。
 
----
-
+（这类简单开发后续将不再演示，只将代码/内容放至[另外仓库的case-file文件夹](https://github.com/Wooden-Ghost/ninefive-supreme-methodology/tree/main/case-file)里）
 ## 项目简介
 
 这个工具并不是简单地“把两个表拼起来”，而是针对实际业务场景设计的联系人处理工具，核心目标是：
